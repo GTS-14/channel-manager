@@ -1,0 +1,74 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
+
+model Account {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  listings  Listing[]
+  payouts   Payout[]
+  messages  Message[]
+}
+
+model Listing {
+  id           String        @id @default(cuid())
+  account      Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId    String
+  name         String
+  platform     Platform?
+  icalUrls     IcalUrl[]
+  reservations Reservation[]
+}
+
+model IcalUrl {
+  id        String   @id @default(cuid())
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId String
+  url       String
+  source    Platform
+  createdAt DateTime @default(now())
+}
+
+model Reservation {
+  id         String   @id
+  listing    Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listingId  String
+  start      DateTime
+  end        DateTime
+  source     Platform
+  externalId String?
+  guestName  String?
+  createdAt  DateTime @default(now())
+
+  @@index([listingId, start, end])
+}
+
+model Payout {
+  id         String   @id @default(cuid())
+  account    Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId  String
+  listingId  String?
+  platform   Platform
+  date       DateTime
+  grossCents Int
+  feesCents  Int
+  netCents   Int
+  currency   String
+  createdAt  DateTime @default(now())
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
+  threadId  String
+  platform  Platform?
+  fromEmail String?
+  toEmail   String?
+  subject   String?
+  body      String
+  timestamp DateTime @default(now())
+}
+
+enum Platform { AIRBNB BOOKING VRBO MANUAL }
